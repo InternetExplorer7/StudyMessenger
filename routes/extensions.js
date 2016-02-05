@@ -8,7 +8,7 @@ exports.showGroups = function(api, message) {
                         api.sendMessage("Sorry, no groups were found.", message.threadID);
                 } else { // groups were found, loop through all groups
                         allGroups.forEach(function(group, index) {
-                                api.sendMessage("[ " + index + " ] " + group.name + ": " + group.participantCount + " members.", message.threadID)
+                                api.sendMessage("[ " + index + " ] " + group.name + ": " + (group.participants.length - 1) + " members.", message.threadID)
                         });
                 }
         })
@@ -25,7 +25,7 @@ exports.createGroup = function(api, message) {
         var newGroup = new groupModel({
                 _id: message.threadID,
                 name: name,
-                participantCount: 0
+                participants: []
         })
         api.setTitle(name, message.threadID, function(err) {
                 if (err) {
@@ -38,7 +38,7 @@ exports.createGroup = function(api, message) {
                                         oneModel.name = name;
                                         oneModel.save();
                                 } else { // brand new group
-                                        newGroup.participantCount = message.participantNames.length - 1
+                                        newGroup.participants = message.participantIDs;
                                         newGroup.save();
                                         api.sendMessage("Thanks for creating a group, since we are in Beta, please note a few things. ...", message.threadID);
                                 }
@@ -56,7 +56,7 @@ exports.leaveGroup = function (api, message){
 				return groupModel.findById(message.threadID);
 			}).then(function (oneModel) {
 				if(oneModel){
-					oneModel.participantCount--;
+					oneModel.participants.splice(oneModel.participants.indexOf(message.senderID), 1);
 					oneModel.save();
 				} else {
 					api.sendMessage("Sorry, something went wrong here.", message.threadID);
@@ -67,15 +67,6 @@ exports.leaveGroup = function (api, message){
 	});
 }
 
-// var loopGroups = function (allData, name){
-// 	return Promise.try(function () {
-// 		return allData;
-// 	}).each(function (group, i) {
-// 		if(group.name === name){
-// 			return allData[i];
-// 		}
-// 	})
-// }
 
 exports.joinGroup = function(api, message) {
 	var name = message.body.substring(message.body.indexOf(" "));
@@ -89,13 +80,15 @@ exports.joinGroup = function(api, message) {
                 	api.sendMessage("Please make sure to enter the number of the group you want to join, and not the name! e.g. @join 7. NOT @join precalc2", message.threadID);
                 }
         }).then(function(group) {
-                if (group) { // group is found
+                if (group && group.participants.indexOf(message.senderID) === -1) { // group is found, but user is not (Good, means that user isn't in group)
                         api.addUserToGroup(message.senderID, group._id);
-                        group.participantCount++; // add user to document
+                        group.participants.push(message.senderID) // add user to document
                         group.save(); // save
-                        api.sendMessage("Welcome " + message.senderName.substring(0, message.senderName.indexOf(" ")) + " to the group! Since we are in beta, please use @leave if you decide to leave a group.\n Keep in mind, once you leave a group, you can NOT join back! ", message.threadID);
+                        api.sendMessage("Welcome " + message.senderName.substring(0, message.senderName.indexOf(" ")) + " to the group! Since we are in beta, please use @leave if you decide to leave a group.\n Keep in mind, once you leave a group, you can NOT join back! ", group._id);
+                } else if(group && group.participants.indexOf(message.senderID) !== -1){ // group was valid and user was found in group. 
+                        api.sendMessage("You've already joined that group!", message.threadID);
                 } else {
-                        api.sendMessage("I couldn't quite find that group!", message.threadID);
+                		api.sendMessage("I couldn't quite find that group!", message.threadID);
                 }
         });
 }

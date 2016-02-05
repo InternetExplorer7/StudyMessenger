@@ -4,7 +4,9 @@ var mongoose = require('mongoose');
 var contactSchema = new mongoose.Schema({
 		_id: Number, // GrouID for groups. threadID
 		name: String,
-		participantCount: Number
+        participants: [{
+        	type: String
+        }]
 });
 
 // create the model
