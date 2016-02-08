@@ -8,7 +8,7 @@ exports.showGroups = function(api, message) {
                         api.sendMessage("Sorry, no groups were found.", message.threadID);
                 } else { // groups were found, loop through all groups
                         allGroups.forEach(function(group, index) {
-                                api.sendMessage("[ " + index + " ] " + group.name + ": " + (group.participants.length - 1) + " members.", message.threadID)
+                                api.sendMessage(index + ". " + group.name + " currently has " + (group.participants.length - 1) + " members.", message.threadID)
                         });
                 }
         })
@@ -16,7 +16,7 @@ exports.showGroups = function(api, message) {
 
 
 exports.getHelp = function(api, message) {
-        api.sendMessage("Hey " + message.senderName.substring(0, message.senderName.indexOf(" ")) + ", here are current commands you can use: \n @list: gets the current list of groups. \n @create lets you create your own group!", message.threadID);
+        api.sendMessage("Hey " + message.senderName.substring(0, message.senderName.indexOf(" ")) + ", here are current commands you can use:\n@list: gets the current list of groups.\n@create: lets you create your own group!\n@leave: Exits you from a group chat (If you plan on leaving a group, please use this!)", message.threadID);
 }
 
 exports.createGroup = function(api, message) {
@@ -40,7 +40,7 @@ exports.createGroup = function(api, message) {
                                 } else { // brand new group
                                         newGroup.participants = message.participantIDs;
                                         newGroup.save();
-                                        api.sendMessage("Thanks for creating a group, since we are in Beta, please note a few things. ...", message.threadID);
+                                        api.sendMessage("Thanks for creating a group, since we are in Beta, please note a few things.\n1. Please don't kick other members from the group. If someone's exhibiting poor behavior, plese contact one of the admins.\n2. Don't add anyone to the group, if someoone wants to join, tell them to ask the bot, which will automatically add them to the group!\n3.We are new, spread the word and tell your friends about us!", message.threadID);
                                 }
                         })
                 }
@@ -77,7 +77,7 @@ exports.joinGroup = function(api, message) {
                 if (!isNaN(parseInt(message.body.substring(message.body.indexOf(" "))))) { // is a number
                         return allData[parseInt(message.body.substring(message.body.indexOf(" ")))]
                 } else {
-                	api.sendMessage("Please make sure to enter the number of the group you want to join, and not the name! e.g. @join 7. NOT @join precalc2", message.threadID);
+                	api.sendMessage("Please make sure to enter the number of the group you want to join. e.g. @join 2", message.threadID);
                 }
         }).then(function(group) {
                 if (group && group.participants.indexOf(message.senderID) === -1) { // group is found, but user is not (Good, means that user isn't in group)
@@ -88,7 +88,10 @@ exports.joinGroup = function(api, message) {
                 } else if(group && group.participants.indexOf(message.senderID) !== -1){ // group was valid and user was found in group. 
                         api.sendMessage("You've already joined that group!", message.threadID);
                 } else {
-                		api.sendMessage("I couldn't quite find that group!", message.threadID);
+                		api.sendMessage("I couldn't find that group!", message.threadID);
                 }
+        }).catch(function (e){
+        	console.error(e);
+        	api.sendMessage("Whoops, something went wrong! This error has been noted!");
         });
 }
