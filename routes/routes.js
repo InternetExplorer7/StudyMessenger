@@ -3,7 +3,6 @@ var Promise = require('bluebird');
 var mongoose = require('mongoose');
 var wit = require('node-wit');
 var extensions = require('./extensions');
-
 exports.checkUser = function (api, message){
 	Promise.try(function () {
 		return model.findById(message.senderID); // replace thread id with user id
@@ -15,14 +14,16 @@ exports.checkUser = function (api, message){
 				name: message.senderName
 			});
 			newUser.save();
-			api.sendMessage("Hey, I see that you're messaging in for the first time. Since it's your first time, I'll send you a list of currently running classes.", message.threadID);
-			api.sendMessage("To pull up this list again in the future, just use @list.", message.threadID);
-			api.sendMessage("If you ever get lost, use @help.", message.threadID);
-			api.sendMessage("If you want to join a group, just give me the group number, and I'll automatically add you to that!", message.threadID);
-			api.sendMessage("Don't see the group you're looking for? Make it by using @create group_name. e.g. @create Calc4 or @create Computer Science 210", message.threadID);
+			var welcomeMessage = "";
+			welcomeMessage += "Hey, I see that you're messaging in for the first time. Since it's your first time, I'll send you a list of currently running classes.\n\n";
+			welcomeMessage += "To pull up this list again in the future, just use @list.\n\n"
+			welcomeMessage += "If you ever get lost, use @help.\n\n"
+			welcomeMessage += "If you want to join a group, give me the group number or group name, and I'll automatically add you to it!\n\n"
+			welcomeMessage += "Don't see the group you're looking for? Make it by using @create group_name. e.g. @create Calc4 or @create Computer Science 210\n\n"
+			api.sendMessage(welcomeMessage, message.threadID);
 			setTimeout(function () {
 				extensions.showGroups(api, message);
-			}, 2000);
+			}, 2000)
 		}
 	}).catch(function (e){
 		console.error(e);

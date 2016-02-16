@@ -11,11 +11,8 @@ exports.showGroups = function(api, message) {
                         return "Sorry, no groups were found."
                 } else { // groups were found, loop through all groups
                 	var buildup = "";
-                	console.log('buildup orign: ' + buildup);
                         allGroups.forEach(function(group, index) {
-                        	console.log('buildup each: ' + buildup);
                         	buildup += (index + 1) +  ". " + group.name + " currently has " + (group.participants.length - 1) + " members.\n";
-                                //api.sendMessage(index + ". " + group.name + " currently has " + (group.participants.length - 1) + " members.", message.threadID)
                         });
                         return buildup;
                 }
@@ -36,7 +33,7 @@ exports.createGroup = function(api, message) {
                 _id: message.threadID,
                 name: name,
                 participants: []
-        })
+        });
         api.setTitle(name, message.threadID, function(err) {
                 if (err) {
                         api.sendMessage("Whoops, make sure that you're in a group chat with another person, and then use @create in that group!", message.threadID);
@@ -87,7 +84,7 @@ exports.joinGroup = function(api, message) {
         	if (!isNaN(parseInt(message.body.substring(message.body.indexOf(" "))))) { // body is a number. e.g. 1, 2, 3..
                 return allData[parseInt(message.body.substring(message.body.indexOf(" "))) - 1] // Edit, subtracted 1 to user input. 0 -> 1, 1 -> 2
         	} else { // Could be a group name, check.
-        		return searchForGroup_internal(message, allData);
+        		return searchForGroup_second(message, allData);
         	}
         }).then(function(group) {
         	console.log(JSON.stringify(group));
@@ -111,7 +108,7 @@ If the user didn't enter an index, this function will check to see if they enter
 If not, it'll return null.
 If so, It'll return a group.
 */
-function searchForGroup_internal(message, allData) {
+function searchForGroup_second(message, allData) {
 	var groupName;
 	return Promise.try(function () {
 		return witData.wit(message);
