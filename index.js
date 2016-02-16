@@ -40,4 +40,4 @@ login({ email: "email", password: "pass"},
 		})
 	});
 
-app.listen(appEnv.port);
+app.listen(3000);

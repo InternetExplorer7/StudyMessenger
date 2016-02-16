@@ -1,17 +1,27 @@
 var groupModel = require('../models/group');
 var Promise = require('bluebird');
+var wit = require('node-wit');
+var witData = require('./wit');
 exports.showGroups = function(api, message) {
         Promise.try(function() {
                 return groupModel.find();
         }).then(function(allGroups) {
                 if (allGroups.length === 0) { // No groups found
-                        api.sendMessage("Sorry, no groups were found.", message.threadID);
+                        // api.sendMessage("Sorry, no groups were found.", message.threadID);
+                        return "Sorry, no groups were found."
                 } else { // groups were found, loop through all groups
+                	var buildup = "";
+                	console.log('buildup orign: ' + buildup);
                         allGroups.forEach(function(group, index) {
-                                api.sendMessage(index + ". " + group.name + " currently has " + (group.participants.length - 1) + " members.", message.threadID)
+                        	console.log('buildup each: ' + buildup);
+                        	buildup += (index + 1) +  ". " + group.name + " currently has " + (group.participants.length - 1) + " members.\n";
+                                //api.sendMessage(index + ". " + group.name + " currently has " + (group.participants.length - 1) + " members.", message.threadID)
                         });
+                        return buildup;
                 }
-        })
+        }).then(function (messageToSend){
+        	api.sendMessage(messageToSend, message.threadID);
+        });
 }
 
 
@@ -74,12 +84,13 @@ exports.joinGroup = function(api, message) {
         Promise.try(function() {
                 return groupModel.find();
         }).then(function(allData) {
-                if (!isNaN(parseInt(message.body.substring(message.body.indexOf(" "))))) { // is a number
-                        return allData[parseInt(message.body.substring(message.body.indexOf(" ")))]
-                } else {
-                	api.sendMessage("Please make sure to enter the number of the group you want to join. e.g. @join 2", message.threadID);
-                }
+        	if (!isNaN(parseInt(message.body.substring(message.body.indexOf(" "))))) { // body is a number. e.g. 1, 2, 3..
+                return allData[parseInt(message.body.substring(message.body.indexOf(" "))) - 1] // Edit, subtracted 1 to user input. 0 -> 1, 1 -> 2
+        	} else { // Could be a group name, check.
+        		return searchForGroup_internal(message, allData);
+        	}
         }).then(function(group) {
+        	console.log(JSON.stringify(group));
                 if (group && group.participants.indexOf(message.senderID) === -1) { // group is found, but user is not (Good, means that user isn't in group)
                         api.addUserToGroup(message.senderID, group._id);
                         group.participants.push(message.senderID) // add user to document
@@ -88,10 +99,38 @@ exports.joinGroup = function(api, message) {
                 } else if(group && group.participants.indexOf(message.senderID) !== -1){ // group was valid and user was found in group. 
                         api.sendMessage("You've already joined that group!", message.threadID);
                 } else {
-                		api.sendMessage("I couldn't find that group!", message.threadID);
+                		api.sendMessage("I couldn't find that group, use @help if you're looking for help.", message.threadID);
                 }
         }).catch(function (e){
         	console.error(e);
-        	api.sendMessage("Whoops, something went wrong! This error has been noted!");
+        	api.sendMessage("Whoops, something went wrong! This error has been noted!", message.threadID);
         });
+}
+/*
+If the user didn't enter an index, this function will check to see if they entered a group name.
+If not, it'll return null.
+If so, It'll return a group.
+*/
+function searchForGroup_internal(message, allData) {
+	var groupName;
+	return Promise.try(function () {
+		return witData.wit(message);
+	}).then(function (witResponse){
+		groupName = witResponse;
+		return allData;
+	}).filter(function (group){
+		if(group.name === groupName){
+			return true;
+		} else {
+			return false;
+		}
+	}).then(function (newGroup){
+		if(newGroup){ // Document was found
+			return newGroup[0]
+		} else {
+			return null;
+		}
+	}).catch(function (e){
+		console.error(e);
+	});
 }
